@@ -1,0 +1,37 @@
+# This script requires that you have an ASG names SQLASG asociated NIC (of one VM).
+
+$ResGroup = "test-ASG-RG"
+$targetASG = 'sqlASG'  #Select target ASG
+
+
+
+
+$nics = Get-AzNetworkInterface -ResourceGroupName $ResGroup
+$AffectedNics  = @()
+foreach($nic in $nics) #Loop gets ASGs applied to nic directly
+{
+    $GetAzureNIC = Get-AzNetworkInterface -Name $nic.Name
+    $Name = $nic.Name
+    $prv =  $nic.IpConfigurations.PrivateIpAddress
+    $alloc =  $nic.IpConfigurations.PrivateIpAllocationMethod
+    $asgResourceID = ($GetAzureNIC.IpConfigurationsText | ConvertFrom-Json).ApplicationSecurityGroups.Id
+    
+    $array = @()
+    foreach($asgID in $asgResourceID)
+    {
+        
+        $asgName = (Get-AzResource -ResourceId $asgID).Name
+        $array += $asgName
+    }
+    
+    
+    If ($array  -contains $targetASG)  {
+ 
+        $AffectedNics +=$Name
+ 
+    }
+	$AffectedNics = $AffectedNics | select -Unique
+
+	$AffectedNics    
+}
+
